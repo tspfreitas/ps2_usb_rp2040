@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -21,13 +21,26 @@ jobs:
             https://github.com/raspberrypi/pico-sdk.git "$HOME/pico-sdk"
 
       - name: Compilar
+        shell: bash
         run: |
           export PICO_SDK_PATH="$HOME/pico-sdk"
-          cmake -B build -S .
-          cmake --build build -j"$(nproc)"
+          # Em caso de erro, as linhas de erro aparecem como anotacoes no resumo da execucao
+          (cmake -B build -S . && cmake --build build -j"$(nproc)") 2>&1 | tee build.log || {
+            grep -E "error|Error|undefined reference|FAILED|CMake" build.log | head -25 | while IFS= read -r l; do echo "::error::${l}"; done
+            exit 1
+          }
+
+      - name: Publicar o log de compilacao
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
 
       - name: Publicar o UF2
         uses: actions/upload-artifact@v4
         with:
           name: ps2_usb_rp2040-uf2
           path: build/ps2_usb_rp2040.uf2
+          if-no-files-found: error
