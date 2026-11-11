@@ -12,6 +12,7 @@ pico_sdk_init()
 add_executable(ps2_usb_rp2040
     main.c
     psx.c
+    led.c
     usb_descriptors.c
 )
 
@@ -21,7 +22,12 @@ target_link_libraries(ps2_usb_rp2040
     pico_stdlib
     pico_unique_id
     hardware_spi
+    hardware_pio
+    hardware_clocks
     tinyusb_device
 )
+
+# gera ws2812.pio.h a partir do programa PIO do LED
+pico_generate_pio_header(ps2_usb_rp2040 ${CMAKE_CURRENT_LIST_DIR}/ws2812.pio)
 
 pico_add_extra_outputs(ps2_usb_rp2040)

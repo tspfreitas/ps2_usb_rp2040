@@ -1,5 +1,7 @@
 # PS1/PS2 -> USB (RP2040-Zero), 2 controles
 
+**Português** | [English](README.en.md)
+
 Adaptador USB para **2 controles PS1/PS2 simultâneos** com RP2040 (RP2040-Zero ou Pico).
 Cada porta aparece no PC como um gamepad HID separado (reconhecido no `joy.cpl`, nos jogos e
 no navegador). Serve para jogar e como bancada de teste/reparo de controles.
@@ -42,6 +44,26 @@ RP2040-Zero (opcional):
 
 As versões vetoriais (SVG) estão em `docs/`.
 
+## Gerar o .uf2
+
+### Opção A: GitHub Actions (sem instalar nada)
+
+1. Crie um repositório e envie estes arquivos (inclusive `.github/`).
+2. Abra a aba Actions, execute "build-uf2" (ou apenas faça um push).
+3. Baixe o artefato `ps2_usb_rp2040-uf2`; dentro está o `ps2_usb_rp2040.uf2`.
+
+### Opção B: local (Linux/WSL)
+
+```
+sudo apt install cmake build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+export PICO_SDK_PATH=~/pico-sdk
+cmake -B build -S .
+cmake --build build -j
+```
+
+O arquivo sai em `build/ps2_usb_rp2040.uf2`.
+
 ## Gravar
 
 Segure o botão BOOT da RP2040-Zero, conecte o USB e solte. Ela aparece como um disco (RPI-RP2).
@@ -68,6 +90,20 @@ D-pad: hat (POV). Analógico esquerdo: X/Y. Direito: Z/Rz. Slider/Dial: pressão
 O adaptador é um gamepad HID genérico: o navegador mostra botões e eixos por índice, mas pode não
 desenhar o layout "padrão" de console (isso depende do VID/PID ser conhecido pelo navegador).
 Aperte um botão no controle antes, pois o navegador só lista o gamepad depois do primeiro input.
+
+## LED de status (RP2040-Zero)
+
+O LED RGB da placa (GP16) mostra a conexão com o computador:
+
+| Cor | Significado |
+|---|---|
+| Verde fixo | Conectado ao computador (USB reconhecida), nenhum controle detectado |
+| Azul fixo | Conectado ao computador e pelo menos 1 controle PS1/PS2 detectado |
+| Amarelo fixo | USB suspensa (computador dormindo) |
+| Vermelho piscando | Placa ligada, mas o computador ainda não reconheceu a USB |
+
+Ajustes em `led.h`: `STATUS_LED_LEVEL` (brilho 0–255), `STATUS_LED_SHOW_PADS` (0 = sempre verde),
+`STATUS_LED_MODE` (0 = sem LED, 1 = WS2812 da Zero, 2 = LED comum, ex.: Pico em GP25).
 
 ## Ajustes
 

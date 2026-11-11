@@ -3,6 +3,7 @@
 #include "pico/stdlib.h"
 #include "tusb.h"
 #include "psx.h"
+#include "led.h"
 
 typedef struct __attribute__((packed)) {
   uint16_t buttons;   // bits 0..11 (ver usb_descriptors.c)
@@ -35,6 +36,7 @@ static void build_report(const psx_pad_t *p, hid_report_t *r) {
 
 int main(void) {
   psx_init();
+  led_init();
   tusb_init();
 
   psx_pad_t pad[PSX_PORTS];
@@ -46,6 +48,11 @@ int main(void) {
 
   while (true) {
     tud_task();
+    {
+      int n = 0;
+      for (int i = 0; i < PSX_PORTS; i++) if (pad[i].connected) n++;
+      led_task(n);
+    }
 
     if (time_reached(next)) {
       next = delayed_by_us(next, 4000);            // ~250 Hz
