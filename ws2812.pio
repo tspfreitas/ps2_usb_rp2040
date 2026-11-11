@@ -1,6 +1,6 @@
-; Driver de LED WS2812 (RGB endereçável) para o LED da RP2040-Zero (GP16).
-; Mesma temporização padrão usada nos exemplos oficiais do pico-sdk
-; (T1=2, T2=5, T3=3 ciclos por bit), licença BSD-3-Clause.
+; Driver de LED WS2812 (RGB enderecavel) para o LED da RP2040-Zero (GP16).
+; Mesma temporizacao padrao usada nos exemplos oficiais do pico-sdk
+; (T1=2, T2=5, T3=3 ciclos por bit), licenca BSD-3-Clause.
 
 .program ws2812
 .side_set 1
