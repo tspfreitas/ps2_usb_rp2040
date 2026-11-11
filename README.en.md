@@ -44,26 +44,6 @@ RP2040-Zero (optional):
 
 Vector versions (SVG) are in `docs/`.
 
-## Building the .uf2
-
-### Option A: GitHub Actions (nothing to install)
-
-1. Create a repository and push these files (including `.github/`).
-2. Open the Actions tab and run "build-uf2" (or just push).
-3. Download the `ps2_usb_rp2040-uf2` artifact; it contains `ps2_usb_rp2040.uf2`.
-
-### Option B: local (Linux/WSL)
-
-```
-sudo apt install cmake build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
-export PICO_SDK_PATH=~/pico-sdk
-cmake -B build -S .
-cmake --build build -j
-```
-
-The file ends up in `build/ps2_usb_rp2040.uf2`.
-
 ## Flashing
 
 Hold the BOOT button on the RP2040-Zero, plug in the USB cable and release it. The board shows up as a
