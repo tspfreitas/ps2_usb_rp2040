@@ -44,26 +44,6 @@ RP2040-Zero (opcional):
 
 As versões vetoriais (SVG) estão em `docs/`.
 
-## Gerar o .uf2
-
-### Opção A: GitHub Actions (sem instalar nada)
-
-1. Crie um repositório e envie estes arquivos (inclusive `.github/`).
-2. Abra a aba Actions, execute "build-uf2" (ou apenas faça um push).
-3. Baixe o artefato `ps2_usb_rp2040-uf2`; dentro está o `ps2_usb_rp2040.uf2`.
-
-### Opção B: local (Linux/WSL)
-
-```
-sudo apt install cmake build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
-git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
-export PICO_SDK_PATH=~/pico-sdk
-cmake -B build -S .
-cmake --build build -j
-```
-
-O arquivo sai em `build/ps2_usb_rp2040.uf2`.
-
 ## Gravar
 
 Segure o botão BOOT da RP2040-Zero, conecte o USB e solte. Ela aparece como um disco (RPI-RP2).
