@@ -44,6 +44,26 @@ RP2040-Zero (opcional):
 
 As versões vetoriais (SVG) estão em `docs/`.
 
+## Gerar o .uf2
+
+### Opção A: GitHub Actions (sem instalar nada)
+
+1. Crie um repositório e envie estes arquivos (inclusive `.github/`).
+2. Abra a aba Actions, execute "build-uf2" (ou apenas faça um push).
+3. Baixe o artefato `ps2_usb_rp2040-uf2`; dentro está o `ps2_usb_rp2040.uf2`.
+
+### Opção B: local (Linux/WSL)
+
+```
+sudo apt install cmake build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+git clone --recurse-submodules https://github.com/raspberrypi/pico-sdk.git ~/pico-sdk
+export PICO_SDK_PATH=~/pico-sdk
+cmake -B build -S .
+cmake --build build -j
+```
+
+O arquivo sai em `build/ps2_usb_rp2040.uf2`.
+
 ## Gravar
 
 Segure o botão BOOT da RP2040-Zero, conecte o USB e solte. Ela aparece como um disco (RPI-RP2).
@@ -51,23 +71,32 @@ Copie o `.uf2` para ele; a placa reinicia sozinha.
 
 ## Mapeamento
 
-Os botões seguem a ordem do *Standard Gamepad* dos navegadores.
+Ordem igual ao *Standard Gamepad* dos navegadores e ao padrão usado pelos emuladores (índices a partir de 0,
+como no hardwaretester e no SDL; no `joy.cpl` os botões começam em 1).
 
-| HID | PlayStation | HID | PlayStation |
+| Índice | Botão | Índice | Botão |
 |---|---|---|---|
-| B1 | ✕ | B7 | L2 |
-| B2 | ○ | B8 | R2 |
-| B3 | □ | B9 | Select |
-| B4 | △ | B10 | Start |
-| B5 | L1 | B11 | L3 |
-| B6 | R1 | B12 | R3 |
+| 0 | ✕ (A) | 9 | Start |
+| 1 | ○ (B) | 10 | L3 |
+| 2 | □ (X) | 11 | R3 |
+| 3 | △ (Y) | 12 | D-pad ↑ |
+| 4 | L1 | 13 | D-pad ↓ |
+| 5 | R1 | 14 | D-pad ← |
+| 6 | L2 | 15 | D-pad → |
+| 7 | R2 | 16 | **Mode / Analog** (pulso) |
+| 8 | Select | | |
 
-D-pad: hat (POV). Analógico esquerdo: X/Y. Direito: Z/Rz. Slider/Dial: pressão de L2/R2
-(DualShock 2; nos demais vale 0 ou 255).
+- **Analógicos:** esquerdo = eixos X/Y, direito = eixos Z/Rz. Slider/Dial = pressão analógica de L2/R2
+  (DualShock 2; nos demais vale 0 ou 255).
+- **D-pad:** sai como 4 botões (12–15) e também como hat/POV, para funcionar em emuladores e em jogos antigos.
+  Para usar só um: `PAD_DPAD_AS_BUTTONS` / `PAD_DPAD_AS_HAT` em `main.c`.
+- **Botão ANALOG do DualShock:** o firmware deixa o modo destravado. Ao apertar ANALOG o controle volta para digital,
+  o adaptador volta para analógico na hora e envia um pulso no **botão 16 (Mode)**. No emulador, associe o botão
+  "Analog" (alternar analógico) a esse botão. Para travar o analógico como antes: `PSX_LOCK_ANALOG 1` em `psx.h`.
 
 ## Teste no navegador (hardwaretester.com/gamepad)
 
-O adaptador é um gamepad HID genérico: o navegador mostra botões e eixos por índice, mas pode não
+O adaptador é um gamepad HID genérico (campo "Mapping" = n/a): o navegador mostra botões e eixos por índice, mas pode não
 desenhar o layout "padrão" de console (isso depende do VID/PID ser conhecido pelo navegador).
 Aperte um botão no controle antes, pois o navegador só lista o gamepad depois do primeiro input.
 
@@ -85,11 +114,35 @@ O LED RGB da placa (GP16) mostra a conexão com o computador:
 Ajustes em `led.h`: `STATUS_LED_LEVEL` (brilho 0–255), `STATUS_LED_SHOW_PADS` (0 = sempre verde),
 `STATUS_LED_MODE` (0 = sem LED, 1 = WS2812 da Zero, 2 = LED comum, ex.: Pico em GP25).
 
+## Emuladores (DuckStation, PCSX2)
+
+O adaptador é um gamepad HID genérico. O SDL (usado pelo DuckStation) não tem um perfil pronto para ele, então o
+**mapeamento automático falha** ("Nenhum mapeamento genérico foi gerado"). Isso é esperado: associe os botões
+manualmente, um a um, na tela de controles, usando a tabela acima. Para cada porta, escolha o dispositivo
+(`SDL-0` / `SDL-1`) e aperte o botão no controle para ele ser reconhecido.
+
+Opcional: linha para o `gamecontrollerdb.txt` do SDL (troque `<GUID>` pelo GUID que o programa mostrar; **não testada**):
+
+```
+<GUID>,PS1/PS2 Controller,a:b0,b:b1,x:b2,y:b3,leftshoulder:b4,rightshoulder:b5,lefttrigger:b6,righttrigger:b7,back:b8,start:b9,leftstick:b10,rightstick:b11,dpup:b12,dpdown:b13,dpleft:b14,dpright:b15,guide:b16,leftx:a0,lefty:a1,rightx:a2,righty:a3,platform:Windows,
+```
+
+## Nome e ordem dos 2 controles
+
+Os dois controles são interfaces do mesmo dispositivo USB (mesmo VID/PID). O Windows dá o **mesmo nome** a
+todos os dispositivos com o mesmo VID/PID, então no `joy.cpl` e no SDL os dois aparecem com o mesmo nome. Por
+isso o nome agora é neutro ("PS1/PS2 Controller"), sem "Player 1/2". A porta 1 é a interface 0 e a porta 2 a
+interface 1; a ordem em que o sistema lista os dois pode variar, então identifique apertando um botão.
+
+> O PID mudou para `0x5054`: o Windows instala como dispositivo novo e deixa de usar o nome antigo salvo.
+
 ## Ajustes
 
 - `PSX_BYTE_GAP_US` (psx.h): pausa entre bytes. Se o controle ficar só digital ou instável, aumente para 30–40.
 - `PSX_BAUD` (psx.h): clock do barramento. Com fios longos ou ruído, reduza para 125000.
-- `USB_VID` / `USB_PID` (usb_descriptors.c): valores de teste do TinyUSB. Troque se for distribuir.
+- `USB_VID` / `USB_PID` (usb_descriptors.c): valores de teste do TinyUSB (`0xCafe:0x5054`). Troque se for distribuir.
+- `PSX_LOCK_ANALOG`, `PSX_MODE_PULSE_MS` (psx.h): travar o analógico e duração do pulso do botão Mode.
+- `PAD_DPAD_AS_BUTTONS`, `PAD_DPAD_AS_HAT` (main.c): como o D-pad é enviado.
 
 ## Solução de problemas
 

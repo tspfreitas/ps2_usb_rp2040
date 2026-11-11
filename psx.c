@@ -12,6 +12,8 @@
 static const uint att_pin[PSX_PORTS] = { PSX_PIN_ATT0, PSX_PIN_ATT1 };
 static bool            was_conn[PSX_PORTS];
 static absolute_time_t retry_at[PSX_PORTS];
+static absolute_time_t mode_until[PSX_PORTS];
+static uint8_t         prev_id[PSX_PORTS];
 
 // O SPI do RP2040 e MSB primeiro; o PSX e LSB primeiro -> inverte os bits.
 static inline uint8_t rev8(uint8_t b) {
@@ -65,9 +67,10 @@ static int poll_raw(int port, uint8_t small, uint8_t large, uint8_t *rx) {
 // Em controle digital PS1 (sem modo de configuracao) nao faz nada.
 static void try_configure(int port) {
   uint8_t rx[9];
+  // 0x44: byte 3 = 1 (analogico); byte 4 = 3 trava o modo, 0 deixa o botao ANALOG funcionar
+  const uint8_t analog[9] = {0x01,0x44,0x00,0x01,PSX_LOCK_ANALOG ? 0x03 : 0x00,0x00,0x00,0x00,0x00};
   static const uint8_t enter[9]  = {0x01,0x43,0x00,0x01,0x00,0x00,0x00,0x00,0x00};
   static const uint8_t query[9]  = {0x01,0x45,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-  static const uint8_t analog[9] = {0x01,0x44,0x00,0x01,0x03,0x00,0x00,0x00,0x00};
   static const uint8_t press[9]  = {0x01,0x4F,0x00,0xFF,0xFF,0x03,0x00,0x00,0x00};
   static const uint8_t motors[9] = {0x01,0x4D,0x00,0x00,0x01,0xFF,0xFF,0xFF,0xFF};
   static const uint8_t leave[9]  = {0x01,0x43,0x00,0x00,0x5A,0x5A,0x5A,0x5A,0x5A};
@@ -106,9 +109,17 @@ bool psx_poll(int port, psx_pad_t *p, uint8_t small, uint8_t large) {
     memset(p, 0, sizeof *p);
     p->lx = p->ly = p->rx = p->ry = 128;
     was_conn[port] = false;
+    prev_id[port] = 0;
     return false;
   }
   if (!was_conn[port]) { was_conn[port] = true; retry_at[port] = get_absolute_time(); }
+
+  // Botao ANALOG do DualShock (modo destravado): o controle volta para digital (0x41).
+  // Gera um pulso no botao virtual "Mode" e reconfigura para analogico na hora.
+  if ((prev_id[port] == 0x73 || prev_id[port] == 0x79) && rx[1] == 0x41) {
+    mode_until[port] = make_timeout_time_ms(PSX_MODE_PULSE_MS);
+    retry_at[port] = get_absolute_time();
+  }
 
   // ID 0x41 = digital. Pode ser PS1 digital ou DualShock em modo digital: tenta configurar
   // (imediatamente na conexao e depois a cada 2 s se continuar 0x41).
@@ -120,10 +131,12 @@ bool psx_poll(int port, psx_pad_t *p, uint8_t small, uint8_t large) {
   }
 
   uint8_t id = rx[1];
+  prev_id[port] = id;
   int data = n - 3;
   memset(p, 0, sizeof *p);
   p->connected = true;
   p->id = id;
+  p->mode = !time_reached(mode_until[port]);
   p->lx = p->ly = p->rx = p->ry = 128;
   if (data >= 2) p->buttons = (uint16_t)~(rx[3] | (rx[4] << 8));   // no fio: 0 = pressionado
   if (data >= 6 && (id == 0x73 || id == 0x53 || id == 0x79)) {

@@ -7,17 +7,18 @@
 #define USB_VID 0xCafe
 #endif
 #ifndef USB_PID
-#define USB_PID 0x5053
+#define USB_PID 0x5054
 #endif
 
-// Gamepad: 12 botoes + hat + X,Y (analogico esq), Z,Rz (analogico dir), Slider,Dial (pressao L2/R2)
-// Ordem dos botoes igual ao "Standard Gamepad" do navegador:
-//  B1 X, B2 O, B3 Quad, B4 Tri, B5 L1, B6 R1, B7 L2, B8 R2, B9 Select, B10 Start, B11 L3, B12 R3
+// Gamepad (ordem igual ao "Standard Gamepad" dos navegadores / padrao dos emuladores):
+//  B1 X, B2 O, B3 Quad, B4 Tri, B5 L1, B6 R1, B7 L2, B8 R2, B9 Select, B10 Start, B11 L3, B12 R3,
+//  B13 Cima, B14 Baixo, B15 Esq, B16 Dir, B17 Mode/Analog (pulso quando o botao ANALOG e apertado)
+// + hat (D-pad tambem como POV) + X,Y (analogico esq), Z,Rz (analogico dir), Slider,Dial (pressao L2/R2)
 static const uint8_t desc_hid_report[] = {
   0x05,0x01, 0x09,0x05, 0xA1,0x01,
-    0x05,0x09, 0x19,0x01, 0x29,0x0C, 0x15,0x00, 0x25,0x01,
-    0x75,0x01, 0x95,0x0C, 0x81,0x02,                  // 12 botoes
-    0x75,0x01, 0x95,0x04, 0x81,0x03,                  // padding
+    0x05,0x09, 0x19,0x01, 0x29,0x11, 0x15,0x00, 0x25,0x01,
+    0x75,0x01, 0x95,0x11, 0x81,0x02,                  // 17 botoes
+    0x75,0x01, 0x95,0x07, 0x81,0x03,                  // padding (7 bits)
     0x05,0x01, 0x09,0x39, 0x15,0x00, 0x25,0x07,
     0x35,0x00, 0x46,0x3B,0x01, 0x65,0x14,
     0x75,0x04, 0x95,0x01, 0x81,0x42,                  // hat (8 = neutro)
@@ -49,10 +50,10 @@ static const uint8_t desc_configuration[] = {
 static const char *const string_desc[] = {
   "",                        // 0: idioma (tratado abaixo)
   "DIY",                      // 1: fabricante
-  "PS1/PS2 Controller USB",  // 2: produto
+  "PS1/PS2 Controller",       // 2: produto
   "",                        // 3: serial (id unico do chip)
-  "Player 1",                // 4
-  "Player 2",                // 5
+  "PS1/PS2 Controller",       // 4: interface 0 (porta 1)
+  "PS1/PS2 Controller",       // 5: interface 1 (porta 2)
 };
 
 const uint8_t *tud_descriptor_device_cb(void) { return (const uint8_t *)&desc_device; }
