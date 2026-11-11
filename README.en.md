@@ -142,7 +142,7 @@ interface 1; the order in which the system lists them can vary, so identify them
 - `PSX_BYTE_GAP_US` (psx.h): delay between bytes. If the pad stays digital-only or is unstable, raise it to 30–40.
 - `PSX_BAUD` (psx.h): bus clock. With long wires or noise, lower it to 125000.
 - `USB_VID` / `USB_PID` (usb_descriptors.c): TinyUSB test values (`0xCafe:0x5054`). Change them if you distribute the adapter.
-- `PSX_LOCK_ANALOG`, `PSX_MODE_PULSE_MS` (psx.h): lock analog mode and Mode button pulse length.
+- `PSX_LOCK_ANALOG`, `PSX_MODE_PULSE_MS`, `PSX_MODE_SETTLE_MS` (psx.h): lock analog mode, Mode button pulse length and delay before switching back to analog.
 - `PAD_DPAD_AS_BUTTONS`, `PAD_DPAD_AS_HAT` (main.c): how the D-pad is sent.
 
 ## Troubleshooting

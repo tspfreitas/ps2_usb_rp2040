@@ -63,8 +63,19 @@ static int poll_raw(int port, uint8_t small, uint8_t large, uint8_t *rx) {
   return total;
 }
 
-// Tenta colocar um DualShock em modo analogico (travado) com pressao e motores mapeados.
+static const uint8_t cfg_leave[9] = {0x01,0x43,0x00,0x00,0x5A,0x5A,0x5A,0x5A,0x5A};
+
+// Sai do modo de configuracao (inofensivo se o controle nao estiver nele).
+static void exit_config(int port) {
+  uint8_t rx[9];
+  txn_fixed(port, cfg_leave, rx, 9);
+  sleep_ms(2);
+}
+
+// Tenta colocar um DualShock em modo analogico com pressao e motores mapeados.
 // Em controle digital PS1 (sem modo de configuracao) nao faz nada.
+// IMPORTANTE: qualquer caminho que tenha mandado "entrar em config" termina com "sair de config";
+// um controle preso em modo de configuracao para de responder aos botoes ate religar.
 static void try_configure(int port) {
   uint8_t rx[9];
   // 0x44: byte 3 = 1 (analogico); byte 4 = 3 trava o modo, 0 deixa o botao ANALOG funcionar
@@ -73,17 +84,20 @@ static void try_configure(int port) {
   static const uint8_t query[9]  = {0x01,0x45,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
   static const uint8_t press[9]  = {0x01,0x4F,0x00,0xFF,0xFF,0x03,0x00,0x00,0x00};
   static const uint8_t motors[9] = {0x01,0x4D,0x00,0x00,0x01,0xFF,0xFF,0xFF,0xFF};
-  static const uint8_t leave[9]  = {0x01,0x43,0x00,0x00,0x5A,0x5A,0x5A,0x5A,0x5A};
 
   txn_fixed(port, enter, rx, 9);
   sleep_us(500);
   txn_fixed(port, query, rx, 9);
-  if (rx[1] != 0xF3) return;                 // nao entrou em config: controle digital
+  if (rx[1] != 0xF3) {                       // resposta inesperada: garante que nao ficou em config
+    sleep_us(500);
+    exit_config(port);
+    return;
+  }
   sleep_us(500); txn_fixed(port, analog, rx, 9);
   sleep_us(500); txn_fixed(port, press,  rx, 9);
   sleep_us(500); txn_fixed(port, motors, rx, 9);
-  sleep_us(500); txn_fixed(port, leave,  rx, 9);
-  sleep_ms(2);
+  sleep_us(500);
+  exit_config(port);
 }
 
 void psx_init(void) {
@@ -114,11 +128,23 @@ bool psx_poll(int port, psx_pad_t *p, uint8_t small, uint8_t large) {
   }
   if (!was_conn[port]) { was_conn[port] = true; retry_at[port] = get_absolute_time(); }
 
+  // ID 0xF3 = controle preso em modo de configuracao: sai dele e le de novo.
+  if (rx[1] == 0xF3) {
+    exit_config(port);
+    retry_at[port] = get_absolute_time();
+    n = poll_raw(port, small, large, rx);
+    if (n == 0 || rx[1] == 0xF3) {
+      memset(p, 0, sizeof *p); p->lx = p->ly = p->rx = p->ry = 128;
+      prev_id[port] = 0;
+      return false;
+    }
+  }
+
   // Botao ANALOG do DualShock (modo destravado): o controle volta para digital (0x41).
-  // Gera um pulso no botao virtual "Mode" e reconfigura para analogico na hora.
+  // Gera um pulso no botao virtual "Mode" e, depois de uma pequena pausa, volta para analogico.
   if ((prev_id[port] == 0x73 || prev_id[port] == 0x79) && rx[1] == 0x41) {
     mode_until[port] = make_timeout_time_ms(PSX_MODE_PULSE_MS);
-    retry_at[port] = get_absolute_time();
+    retry_at[port] = make_timeout_time_ms(PSX_MODE_SETTLE_MS);
   }
 
   // ID 0x41 = digital. Pode ser PS1 digital ou DualShock em modo digital: tenta configurar

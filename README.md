@@ -141,7 +141,7 @@ interface 1; a ordem em que o sistema lista os dois pode variar, então identifi
 - `PSX_BYTE_GAP_US` (psx.h): pausa entre bytes. Se o controle ficar só digital ou instável, aumente para 30–40.
 - `PSX_BAUD` (psx.h): clock do barramento. Com fios longos ou ruído, reduza para 125000.
 - `USB_VID` / `USB_PID` (usb_descriptors.c): valores de teste do TinyUSB (`0xCafe:0x5054`). Troque se for distribuir.
-- `PSX_LOCK_ANALOG`, `PSX_MODE_PULSE_MS` (psx.h): travar o analógico e duração do pulso do botão Mode.
+- `PSX_LOCK_ANALOG`, `PSX_MODE_PULSE_MS`, `PSX_MODE_SETTLE_MS` (psx.h): travar o analógico, duração do pulso do botão Mode e espera antes de voltar para analógico.
 - `PAD_DPAD_AS_BUTTONS`, `PAD_DPAD_AS_HAT` (main.c): como o D-pad é enviado.
 
 ## Solução de problemas

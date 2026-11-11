@@ -40,6 +40,12 @@
 #define PSX_MODE_PULSE_MS 120
 #endif
 
+// Espera apos o botao ANALOG (controle voltou para digital) antes de reconfigurar para analogico.
+// Mexer no controle durante a troca de modo pode deixa-lo preso em modo de configuracao.
+#ifndef PSX_MODE_SETTLE_MS
+#define PSX_MODE_SETTLE_MS 80
+#endif
+
 // Bits de psx_pad_t.buttons (1 = pressionado)
 enum {
   PSX_SELECT = 0, PSX_L3, PSX_R3, PSX_START, PSX_UP, PSX_RIGHT, PSX_DOWN, PSX_LEFT,
